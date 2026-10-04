@@ -1,3 +1,20 @@
+# CampusEats
+
+## Project Idea
+CampusEats is a cafeteria ordering system where students and staff can browse the university cafeteria menu, place food orders, and track their order status. Cafeteria managers can manage menu items, prices, and availability, while kitchen staff can view incoming orders and update their preparation status. The application will be built with React + TypeScript and FastAPI REST APIs, using authentication and role-based access control to enforce permissions for each user role.
+
+## User Roles
+- **Admin / Cafeteria Manager:** Manage menu items, prices, and availability; view all orders.
+- **Kitchen Staff:** View incoming orders and update preparation status.
+- **Customer (Student/Staff):** Browse menu, place orders, view order history.
+
+## Tech Stack
+- Frontend: React.js + TypeScript
+- Backend: FastAPI
+- API: REST APIs
+- Auth: Authentication & Role-Based Access Control (RBAC)
+- Database: PostgreSQL / MySQL
+
 # FastAPI + React Template
 
 FastAPI backend + Vite/React/TypeScript frontend, deployed to Vercel as one project.
