@@ -50,3 +50,9 @@ class MenuItemRead(SQLModel):
     is_available: bool
     created_at: datetime
     updated_at: datetime
+
+class MenuItemPage(SQLModel):
+    items: list[MenuItemRead]
+    total: int
+    offset: int
+    limit: int
