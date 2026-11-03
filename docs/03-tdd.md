@@ -202,7 +202,7 @@ Base path: `/api/v1`. Interactive docs: `/api/docs`.
 | Method | Endpoint | Description | Success | FR |
 |--------|----------|-------------|---------|----|
 | POST | `/menu` | Create menu item | 201 | FR-01 |
-| GET | `/menu` | List items (`category`, `available`, `q` filters) | 200 | FR-02 |
+| GET | `/menu?offset=0&limit=20` | List items, paged: response is `{items, total, offset, limit}` (limit 1 to 100); optional `category`, `available`, `q` filters | 200 | FR-02 |
 | GET | `/menu/{id}` | Get one item | 200 | FR-03 |
 | PATCH | `/menu/{id}` | Update item | 200 | FR-04 |
 | DELETE | `/menu/{id}` | Delete item (409 if used) | 204 | FR-05 |

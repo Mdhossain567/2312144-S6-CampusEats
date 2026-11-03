@@ -120,7 +120,7 @@ Only the transitions shown are allowed. Any other transition is rejected with `4
 | ID | Requirement | Release | Story |
 |----|-------------|---------|-------|
 | FR-01 | The system shall allow creating a menu item with name, description, price, category and availability. | MVP | US-01 |
-| FR-02 | The system shall list menu items and support filtering by category and availability and searching by keyword. | MVP | US-02 |
+| FR-02 | The system shall list menu items and support filtering by category and availability and searching by keyword. The list shall be paginated with offset and limit (limit 1 to 100, default 20) and return the total count. | MVP | US-02 |
 | FR-03 | The system shall return a single menu item by id. | MVP | US-02 |
 | FR-04 | The system shall allow updating a menu item. | MVP | US-03 |
 | FR-05 | The system shall allow deleting a menu item; if it is used by an existing order the system shall reject the deletion with `409`. | MVP | US-03 |
@@ -231,13 +231,14 @@ Only the transitions shown are allowed. Any other transition is rejected with `4
 | AC-16 | FR-21 | Beta | Given a deactivated user, when they try to log in, then the API returns `403`. |
 | AC-17 | FR-22 | Beta | Given orders in several statuses, when an admin opens the dashboard, then counts per status match the database. |
 | AC-18 | FR-23 | Beta | Given 5 failed logins in a row, when the user tries again, then the API returns `429` until the lock period ends. |
+| AC-19 | FR-02 | MVP | Given 4 menu items, when a client requests offset 2 and limit 2, then the second page of 2 items is returned with total 4. |
 
 ## 12. Traceability
 
 | Story | Requirements | Main endpoints | Acceptance criteria | Release |
 |-------|--------------|----------------|---------------------|---------|
 | US-01 | FR-01 | `POST /api/v1/menu` | AC-01, AC-02 | MVP |
-| US-02 | FR-02, FR-03, FR-11 | `GET /api/v1/menu`, `GET /api/v1/menu/{id}` | AC-03 | MVP |
+| US-02 | FR-02, FR-03, FR-11 | `GET /api/v1/menu`, `GET /api/v1/menu/{id}` | AC-03, AC-19 | MVP |
 | US-03 | FR-04, FR-05 | `PATCH /api/v1/menu/{id}`, `DELETE /api/v1/menu/{id}` | AC-04 | MVP |
 | US-04 | FR-06, FR-11 | `POST /api/v1/orders` | AC-05, AC-06 | MVP |
 | US-05 | FR-07, FR-08 | `GET /api/v1/orders`, `GET /api/v1/orders/{id}` | AC-05 | MVP |
