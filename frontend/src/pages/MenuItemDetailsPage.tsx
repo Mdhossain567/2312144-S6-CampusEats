@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { getMenuItem } from '../services/api'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { deleteMenuItem, getMenuItem } from '../services/api'
 import type { MenuItem } from '../types/menuItem'
 
 export default function MenuItemDetailsPage() {
   const { menuItemId } = useParams()
+  const navigate = useNavigate()
   const [item, setItem] = useState<MenuItem | null>(null)
   const [error, setError] = useState('')
 
@@ -22,6 +23,17 @@ export default function MenuItemDetailsPage() {
     }
   }, [menuItemId])
 
+  async function handleDelete() {
+    if (!item) return
+    if (!window.confirm(`Delete "${item.name}"?`)) return
+    try {
+      await deleteMenuItem(item.id)
+      navigate('/')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete the item')
+    }
+  }
+
   return (
     <section>
       <Link to="/">&larr; Back to menu</Link>
@@ -31,38 +43,49 @@ export default function MenuItemDetailsPage() {
       {!item && !error && <p className="muted">Loading...</p>}
 
       {item && (
-        <table className="details">
-          <tbody>
-            <tr>
-              <th>Name</th>
-              <td>{item.name}</td>
-            </tr>
-            <tr>
-              <th>Description</th>
-              <td>{item.description ?? '-'}</td>
-            </tr>
-            <tr>
-              <th>Category</th>
-              <td>{item.category}</td>
-            </tr>
-            <tr>
-              <th>Price</th>
-              <td>Tk {item.price}</td>
-            </tr>
-            <tr>
-              <th>Status</th>
-              <td>{item.is_available ? 'Available' : 'Unavailable'}</td>
-            </tr>
-            <tr>
-              <th>Created</th>
-              <td>{new Date(item.created_at).toLocaleString()}</td>
-            </tr>
-            <tr>
-              <th>Updated</th>
-              <td>{new Date(item.updated_at).toLocaleString()}</td>
-            </tr>
-          </tbody>
-        </table>
+        <>
+          <table className="details">
+            <tbody>
+              <tr>
+                <th>Name</th>
+                <td>{item.name}</td>
+              </tr>
+              <tr>
+                <th>Description</th>
+                <td>{item.description ?? '-'}</td>
+              </tr>
+              <tr>
+                <th>Category</th>
+                <td>{item.category}</td>
+              </tr>
+              <tr>
+                <th>Price</th>
+                <td>Tk {item.price}</td>
+              </tr>
+              <tr>
+                <th>Status</th>
+                <td>{item.is_available ? 'Available' : 'Unavailable'}</td>
+              </tr>
+              <tr>
+                <th>Created</th>
+                <td>{new Date(item.created_at).toLocaleString()}</td>
+              </tr>
+              <tr>
+                <th>Updated</th>
+                <td>{new Date(item.updated_at).toLocaleString()}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="actions">
+            <Link to={`/menu/${item.id}/edit`} className="btn-primary">
+              Edit
+            </Link>
+            <button className="btn-danger" onClick={handleDelete}>
+              Delete
+            </button>
+          </div>
+        </>
       )}
     </section>
   )

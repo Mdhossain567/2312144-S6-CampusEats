@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { listMenuItems } from '../services/api'
+import { deleteMenuItem, listMenuItems } from '../services/api'
 import type { Category, MenuItem } from '../types/menuItem'
 
 const PAGE_SIZE = 5
@@ -16,6 +16,7 @@ export default function MenuPage() {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [refresh, setRefresh] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -37,7 +38,7 @@ export default function MenuPage() {
     return () => {
       cancelled = true
     }
-  }, [offset, category, query])
+  }, [offset, category, query, refresh])
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -50,12 +51,31 @@ export default function MenuPage() {
     setCategory(value as Category | '')
   }
 
+  async function handleDelete(item: MenuItem) {
+    if (!window.confirm(`Delete "${item.name}"?`)) return
+    try {
+      await deleteMenuItem(item.id)
+      if (items.length === 1 && offset > 0) {
+        setOffset(offset - PAGE_SIZE)
+      } else {
+        setRefresh((value) => value + 1)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete the item')
+    }
+  }
+
   const from = total === 0 ? 0 : offset + 1
   const to = Math.min(offset + PAGE_SIZE, total)
 
   return (
     <section>
-      <h1>Cafeteria Menu</h1>
+      <div className="page-head">
+        <h1>Cafeteria Menu</h1>
+        <Link to="/menu/new" className="btn-primary">
+          + Add item
+        </Link>
+      </div>
       <p className="muted">Menu items saved in the database.</p>
 
       <form className="filters" onSubmit={handleSearch}>
@@ -93,6 +113,10 @@ export default function MenuPage() {
             <div className="row-right">
               <span className="price">Tk {item.price}</span>
               <Link to={`/menu/${item.id}`}>View</Link>
+              <Link to={`/menu/${item.id}/edit`}>Edit</Link>
+              <button className="btn-danger" onClick={() => handleDelete(item)}>
+                Delete
+              </button>
             </div>
           </li>
         ))}
