@@ -1,4 +1,4 @@
-import type { Category, MenuItem, MenuItemPage } from '../types/menuItem'
+import type { Category, MenuItem, MenuItemInput, MenuItemPage } from '../types/menuItem'
 
 const BASE = '/api/v1/menu'
 
@@ -43,4 +43,16 @@ export function listMenuItems(
 
 export function getMenuItem(id: number) {
   return request<MenuItem>(`${BASE}/${id}`)
+}
+
+export function createMenuItem(data: MenuItemInput) {
+  return request<MenuItem>(BASE, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function updateMenuItem(id: number, data: Partial<MenuItemInput>) {
+  return request<MenuItem>(`${BASE}/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export function deleteMenuItem(id: number) {
+  return request<void>(`${BASE}/${id}`, { method: 'DELETE' })
 }
