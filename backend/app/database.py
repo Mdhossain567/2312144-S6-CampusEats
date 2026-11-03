@@ -3,12 +3,21 @@ from collections.abc import Generator
 from typing import Annotated
 
 from fastapi import Depends
+from sqlalchemy.pool import NullPool
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.config import DATABASE_URL
 
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    # Supabase transaction pooler (port 6543): no client-side pool and no
+    # prepared statements, because the pooler hands out a new connection per query.
+    engine = create_engine(
+        DATABASE_URL,
+        poolclass=NullPool,
+        connect_args={"prepare_threshold": None},
+    )
 
 
 def init_db() -> None:
