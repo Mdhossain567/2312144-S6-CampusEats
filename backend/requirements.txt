@@ -1,3 +1,5 @@
 fastapi[standard]>=0.141.1
 sqlmodel
 psycopg[binary]
+argon2-cffi
+PyJWT
