@@ -23,6 +23,7 @@ else:
 def init_db() -> None:
     """Create the tables that do not exist yet."""
     import app.menu_items.models  # noqa: F401  (registers the table)
+    import app.users.models  # noqa: F401  (registers the table)
 
     SQLModel.metadata.create_all(engine)
 

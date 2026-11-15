@@ -1,0 +1,57 @@
+"""Request and response shapes for accounts and login."""
+from datetime import datetime
+from typing import Literal
+
+from pydantic import EmailStr, field_validator
+from sqlmodel import Field, SQLModel
+
+Role = Literal["customer", "kitchen_staff", "admin"]
+
+
+class UserRegister(SQLModel):
+    name: str = Field(min_length=2, max_length=80)
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def strip_name(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def clean_email(cls, value):
+        return value.strip().lower() if isinstance(value, str) else value
+
+    @field_validator("password")
+    @classmethod
+    def password_needs_letter_and_digit(cls, value: str) -> str:
+        if not any(c.isalpha() for c in value) or not any(c.isdigit() for c in value):
+            raise ValueError("Password must contain at least one letter and one digit")
+        return value
+
+
+class UserLogin(SQLModel):
+    email: EmailStr
+    password: str = Field(min_length=1, max_length=128)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def clean_email(cls, value):
+        return value.strip().lower() if isinstance(value, str) else value
+
+
+class UserRead(SQLModel):
+    id: int
+    name: str
+    email: str
+    role: str
+    is_active: bool
+    created_at: datetime
+
+
+class TokenResponse(SQLModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: UserRead
