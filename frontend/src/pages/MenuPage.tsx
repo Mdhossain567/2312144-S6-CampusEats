@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { deleteMenuItem, listMenuItems } from '../services/api'
 import type { Category, MenuItem } from '../types/menuItem'
 
@@ -8,6 +9,8 @@ const PAGE_SIZE = 5
 const CATEGORIES: Category[] = ['meal', 'snack', 'drink', 'dessert']
 
 export default function MenuPage() {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [items, setItems] = useState<MenuItem[]>([])
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
@@ -72,9 +75,11 @@ export default function MenuPage() {
     <section>
       <div className="page-head">
         <h1>Cafeteria Menu</h1>
-        <Link to="/menu/new" className="btn-primary">
-          + Add item
-        </Link>
+        {isAdmin && (
+          <Link to="/menu/new" className="btn-primary">
+            + Add item
+          </Link>
+        )}
       </div>
       <p className="muted">Menu items saved in the database.</p>
 
@@ -113,10 +118,14 @@ export default function MenuPage() {
             <div className="row-right">
               <span className="price">Tk {item.price}</span>
               <Link to={`/menu/${item.id}`}>View</Link>
-              <Link to={`/menu/${item.id}/edit`}>Edit</Link>
-              <button className="btn-danger" onClick={() => handleDelete(item)}>
-                Delete
-              </button>
+              {isAdmin && (
+                <>
+                  <Link to={`/menu/${item.id}/edit`}>Edit</Link>
+                  <button className="btn-danger" onClick={() => handleDelete(item)}>
+                    Delete
+                  </button>
+                </>
+              )}
             </div>
           </li>
         ))}
