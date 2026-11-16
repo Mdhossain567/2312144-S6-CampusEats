@@ -1,6 +1,10 @@
-"""HTTP endpoints for menu items under /api/v1/menu (JSON)."""
-from fastapi import APIRouter, Query, Response, status
+"""HTTP endpoints for menu items under /api/v1/menu (JSON).
 
+Reading the menu is public. Creating, changing and deleting items is admin only.
+"""
+from fastapi import APIRouter, Depends, Query, Response, status
+
+from app.auth.dependencies import require_roles
 from app.database import SessionDep
 from app.menu_items import service
 from app.menu_items.schemas import (
@@ -13,8 +17,16 @@ from app.menu_items.schemas import (
 
 router = APIRouter(prefix="/api/v1/menu", tags=["menu"])
 
+# 401 without a valid token, 403 for any role other than admin.
+admin_only = Depends(require_roles("admin"))
 
-@router.post("", response_model=MenuItemRead, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "",
+    response_model=MenuItemRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[admin_only],
+)
 def create_menu_item(data: MenuItemCreate, session: SessionDep):
     return service.create_menu_item(session, data)
 
@@ -42,12 +54,20 @@ def get_menu_item(menu_item_id: int, session: SessionDep):
     return service.get_menu_item(session, menu_item_id)
 
 
-@router.patch("/{menu_item_id}", response_model=MenuItemRead)
+@router.patch(
+    "/{menu_item_id}",
+    response_model=MenuItemRead,
+    dependencies=[admin_only],
+)
 def update_menu_item(menu_item_id: int, data: MenuItemUpdate, session: SessionDep):
     return service.update_menu_item(session, menu_item_id, data)
 
 
-@router.delete("/{menu_item_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{menu_item_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[admin_only],
+)
 def delete_menu_item(menu_item_id: int, session: SessionDep):
     service.delete_menu_item(session, menu_item_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

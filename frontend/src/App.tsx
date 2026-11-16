@@ -61,9 +61,23 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/menu/new" element={<NewMenuItemPage />} />
+            <Route
+              path="/menu/new"
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <NewMenuItemPage />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/menu/:menuItemId" element={<MenuItemDetailsPage />} />
-            <Route path="/menu/:menuItemId/edit" element={<EditMenuItemPage />} />
+            <Route
+              path="/menu/:menuItemId/edit"
+              element={
+                <ProtectedRoute roles={['admin']}>
+                  <EditMenuItemPage />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </main>
       </AuthProvider>

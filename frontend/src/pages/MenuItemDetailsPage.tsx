@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { deleteMenuItem, getMenuItem } from '../services/api'
 import type { MenuItem } from '../types/menuItem'
 
 export default function MenuItemDetailsPage() {
   const { menuItemId } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [item, setItem] = useState<MenuItem | null>(null)
   const [error, setError] = useState('')
 
@@ -77,14 +80,16 @@ export default function MenuItemDetailsPage() {
             </tbody>
           </table>
 
-          <div className="actions">
-            <Link to={`/menu/${item.id}/edit`} className="btn-primary">
-              Edit
-            </Link>
-            <button className="btn-danger" onClick={handleDelete}>
-              Delete
-            </button>
-          </div>
+          {isAdmin && (
+            <div className="actions">
+              <Link to={`/menu/${item.id}/edit`} className="btn-primary">
+                Edit
+              </Link>
+              <button className="btn-danger" onClick={handleDelete}>
+                Delete
+              </button>
+            </div>
+          )}
         </>
       )}
     </section>
