@@ -1,0 +1,28 @@
+/* Login, register and the navigation bar for logged-in users */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-right {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.nav-link {
+  color: #fff;
+  text-decoration: none;
+}
+
+.nav-button {
+  background: transparent;
+  color: #fff;
+  border-color: #5b6b7d;
+}
+
+.auth-card {
+  max-width: 420px;
+  margin: 0 auto;
+}
