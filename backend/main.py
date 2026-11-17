@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.auth.router import router as auth_router
 from app.database import init_db
 from app.menu_items.router import router as menu_router
+from app.orders.router import router as orders_router
 
 logger = logging.getLogger("campuseats")
 
@@ -27,6 +28,7 @@ except Exception:
 
 app.include_router(menu_router)
 app.include_router(auth_router)
+app.include_router(orders_router)
 
 
 @app.exception_handler(Exception)
