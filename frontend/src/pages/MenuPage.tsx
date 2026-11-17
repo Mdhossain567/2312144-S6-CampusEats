@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import CartPanel from '../components/CartPanel'
 import { useAuth } from '../context/AuthContext'
+import { useCart } from '../context/CartContext'
 import { deleteMenuItem, listMenuItems } from '../services/api'
 import type { Category, MenuItem } from '../types/menuItem'
 
@@ -11,6 +13,8 @@ const CATEGORIES: Category[] = ['meal', 'snack', 'drink', 'dessert']
 export default function MenuPage() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
+  const isCustomer = user?.role === 'customer'
+  const { add } = useCart()
   const [items, setItems] = useState<MenuItem[]>([])
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
@@ -100,6 +104,13 @@ export default function MenuPage() {
         </select>
       </form>
 
+      {isCustomer && <CartPanel />}
+      {!user && (
+        <p className="muted">
+          <Link to="/login">Log in</Link> to order from the menu.
+        </p>
+      )}
+
       {error && <p className="error">{error}</p>}
       {loading && <p className="muted">Loading...</p>}
       {!loading && !error && items.length === 0 && (
@@ -117,6 +128,11 @@ export default function MenuPage() {
             </div>
             <div className="row-right">
               <span className="price">Tk {item.price}</span>
+              {isCustomer && item.is_available && (
+                <button className="btn-primary" onClick={() => add(item)}>
+                  Add to cart
+                </button>
+              )}
               <Link to={`/menu/${item.id}`}>View</Link>
               {isAdmin && (
                 <>
