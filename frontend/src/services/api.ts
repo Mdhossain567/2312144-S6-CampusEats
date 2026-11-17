@@ -1,8 +1,10 @@
 import type { AuthUser, LoginInput, RegisterInput, TokenResponse } from '../types/auth'
 import type { Category, MenuItem, MenuItemInput, MenuItemPage } from '../types/menuItem'
+import type { Order, OrderPage, OrderRequestItem } from '../types/order'
 
 const MENU = '/api/v1/menu'
 const AUTH = '/api/v1/auth'
+const ORDERS = '/api/v1/orders'
 const TOKEN_KEY = 'campuseats_access_token'
 
 // The access token lives in memory and in sessionStorage, so a reload keeps the
@@ -113,4 +115,17 @@ export function login(data: LoginInput) {
 
 export function getMe() {
   return request<AuthUser>(`${AUTH}/me`)
+}
+
+export function createOrder(items: OrderRequestItem[]) {
+  return request<Order>(ORDERS, { method: 'POST', body: JSON.stringify({ items }) })
+}
+
+export function listMyOrders(offset: number, limit: number) {
+  const params = new URLSearchParams({ offset: String(offset), limit: String(limit) })
+  return request<OrderPage>(`${ORDERS}/my?${params.toString()}`)
+}
+
+export function cancelOrder(id: number) {
+  return request<Order>(`${ORDERS}/${id}/cancel`, { method: 'POST' })
 }
