@@ -311,3 +311,25 @@ button:disabled {
   padding: 8px 12px;
   border-radius: 6px;
 }
+/* Kitchen board */
+.status-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.status-tabs button {
+  border-radius: 16px;
+}
+
+.tab-active {
+  background: #1677ff;
+  color: #fff;
+  border-color: #1677ff;
+}
+
+.order-actions {
+  display: flex;
+  gap: 8px;
+}

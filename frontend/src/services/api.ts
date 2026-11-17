@@ -1,6 +1,6 @@
 import type { AuthUser, LoginInput, RegisterInput, TokenResponse } from '../types/auth'
 import type { Category, MenuItem, MenuItemInput, MenuItemPage } from '../types/menuItem'
-import type { Order, OrderPage, OrderRequestItem } from '../types/order'
+import type { Order, OrderPage, OrderRequestItem, OrderStatus } from '../types/order'
 
 const MENU = '/api/v1/menu'
 const AUTH = '/api/v1/auth'
@@ -128,4 +128,17 @@ export function listMyOrders(offset: number, limit: number) {
 
 export function cancelOrder(id: number) {
   return request<Order>(`${ORDERS}/${id}/cancel`, { method: 'POST' })
+}
+
+export function listAllOrders(offset: number, limit: number, status?: OrderStatus) {
+  const params = new URLSearchParams({ offset: String(offset), limit: String(limit) })
+  if (status) params.set('status', status)
+  return request<OrderPage>(`${ORDERS}?${params.toString()}`)
+}
+
+export function updateOrderStatus(id: number, status: OrderStatus) {
+  return request<Order>(`${ORDERS}/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  })
 }
