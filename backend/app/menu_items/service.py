@@ -5,6 +5,7 @@ from sqlmodel import Session
 from app.menu_items import repository
 from app.menu_items.models import MenuItem, utc_now
 from app.menu_items.schemas import MenuItemCreate, MenuItemUpdate
+from app.orders import repository as order_repository
 
 
 def _duplicate_name() -> HTTPException:
@@ -43,4 +44,11 @@ def update_menu_item(session: Session, menu_item_id: int, data: MenuItemUpdate) 
 
 
 def delete_menu_item(session: Session, menu_item_id: int) -> None:
-    repository.delete(session, get_menu_item(session, menu_item_id))
+    item = get_menu_item(session, menu_item_id)
+    # Old orders keep pointing at the item, so it cannot be removed.
+    if order_repository.menu_item_is_used(session, menu_item_id):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "This menu item is part of an order. Mark it unavailable instead of deleting it.",
+        )
+    repository.delete(session, item)
