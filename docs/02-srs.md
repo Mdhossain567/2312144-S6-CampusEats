@@ -8,6 +8,8 @@
 
 Every requirement is tagged **MVP** (mid-term demo) or **Beta** (final demo) and linked to a user story from the [PRD](01-prd.md).
 
+**Scope note (updated for the final demo).** The mid-term demo delivered the menu feature. The order requirements (FR-06 to FR-10) were built in the Beta together with accounts and roles, so they are tagged Beta here. Section 13 shows what is done and what is planned.
+
 ---
 
 ## 1. Purpose
@@ -124,12 +126,12 @@ Only the transitions shown are allowed. Any other transition is rejected with `4
 | FR-03 | The system shall return a single menu item by id. | MVP | US-02 |
 | FR-04 | The system shall allow updating a menu item. | MVP | US-03 |
 | FR-05 | The system shall allow deleting a menu item; if it is used by an existing order the system shall reject the deletion with `409`. | MVP | US-03 |
-| FR-06 | The system shall allow placing an order with one or more items; the server shall calculate the total from current menu prices and set the status to `pending`. | MVP | US-04 |
-| FR-07 | The system shall list orders and support filtering by status. | MVP | US-05 |
-| FR-08 | The system shall return an order with its items and total. | MVP | US-05 |
-| FR-09 | The system shall allow updating an order's status only through the transitions in the state diagram. | MVP | US-06 |
-| FR-10 | The system shall allow cancelling an order only while it is `pending`. | MVP | US-07 |
-| FR-11 | The React UI shall provide a menu page, an order form with cart, and a kitchen order board. | MVP | US-02, US-04, US-06 |
+| FR-06 | The system shall allow a logged-in customer to place an order with one or more items; the server shall calculate the total from the current menu prices, copy each item's name and price into the order, set the status to `pending`, and reject unknown or unavailable items with 422. | Beta | US-04 |
+| FR-07 | The system shall let kitchen staff and admins list all orders, filter them by status and page through them. | Beta | US-05 |
+| FR-08 | The system shall return an order with its items and total to its customer, to kitchen staff or to an admin. | Beta | US-05 |
+| FR-09 | The system shall let kitchen staff and admins change an order's status only through the transitions in the state diagram. | Beta | US-06 |
+| FR-10 | The system shall allow cancelling an order only while it is `pending`, by its customer or by an admin; kitchen staff can reject a pending order through a status change. | Beta | US-07 |
+| FR-11 | The React UI shall provide a menu page, and for logged-in users a cart and a My orders page for customers and a kitchen board for kitchen staff and admins. | MVP (menu), Beta (orders) | US-02, US-04, US-06 |
 | FR-12 | The system shall allow a visitor to register with name, email and password; the email must be unique. | Beta | US-08 |
 | FR-13 | The system shall allow login with email and password and return an access token and a refresh token. | Beta | US-09 |
 | FR-14 | The system shall issue a new access token from a valid refresh token and revoke the refresh token on logout. | Beta | US-09 |
@@ -143,6 +145,9 @@ Only the transitions shown are allowed. Any other transition is rejected with `4
 | FR-22 | The system shall provide admin statistics: total users, orders per status, and the most ordered items. | Beta | US-14 |
 | FR-23 | The system shall temporarily lock login after 5 consecutive failed attempts. | Beta | US-15 |
 | FR-24 | The system shall be deployed online (Vercel frontend and API, Supabase PostgreSQL). | Beta | US-16 |
+| FR-25 | The system shall keep the name and the price of each item as they were when the order was placed, so later menu changes do not change old orders. | Beta | US-04 |
+| FR-26 | The system shall answer 404 when a customer requests another customer's order. | Beta | US-11 |
+| FR-27 | The system shall allow only admins to create, change and delete menu items, while reading the menu stays public. | Beta | US-12 |
 
 ## 8. Non-Functional Requirements
 
@@ -232,6 +237,9 @@ Only the transitions shown are allowed. Any other transition is rejected with `4
 | AC-17 | FR-22 | Beta | Given orders in several statuses, when an admin opens the dashboard, then counts per status match the database. |
 | AC-18 | FR-23 | Beta | Given 5 failed logins in a row, when the user tries again, then the API returns `429` until the lock period ends. |
 | AC-19 | FR-02 | MVP | Given 4 menu items, when a client requests offset 2 and limit 2, then the second page of 2 items is returned with total 4. |
+| AC-20 | FR-25 | Beta | Given an order that contains a menu item, when an admin later changes that item's price, then the order still shows the old unit price. |
+| AC-21 | FR-06 | Beta | Given a kitchen staff or admin token, when a client places an order, then the API returns `403`. |
+| AC-22 | FR-27 | Beta | Given a customer token, when a client creates, changes or deletes a menu item, then the API returns `403`; without a token it returns `401`. |
 
 ## 12. Traceability
 
@@ -253,3 +261,32 @@ Only the transitions shown are allowed. Any other transition is rejected with `4
 | US-14 | FR-22 | `GET /api/v1/admin/stats` | AC-17 | Beta |
 | US-15 | FR-23 | `POST /api/v1/auth/login` | AC-18 | Beta |
 | US-16 | FR-24 | Deployed app | Demo check | Beta |
+
+## 13. Implementation Status (updated for the final demo)
+
+| Requirement | Status |
+|-------------|--------|
+| FR-01 to FR-05 (menu CRUD, filters, pagination) | Done (mid-term MVP) |
+| FR-06 to FR-10 (orders and the status steps) | Done |
+| FR-11 (menu pages, cart, My orders, kitchen board) | Done |
+| FR-12 (register) | Done |
+| FR-13 (login) | Done with an access token; the refresh token is planned |
+| FR-14 (refresh and logout) | Planned |
+| FR-15 (view profile) | Done |
+| FR-16 (edit name, change password) | Planned |
+| FR-17, FR-18 (orders belong to the customer, customers see only their own) | Done |
+| FR-19 (permission matrix enforced) | Done for menu, orders and `/auth/me` |
+| FR-20 (admin changes a role) | Planned in the UI; roles are changed with the `set_role.py` script or in the database |
+| FR-21 (deactivate users) | Partly done: a deactivated user cannot log in or use a token, but there is no admin screen yet |
+| FR-22 (admin statistics) | Planned |
+| FR-23 (login lockout) | Done |
+| FR-24 (deployment) | Done |
+| FR-25 to FR-27 | Done |
+| NFR-01 to NFR-06 | Done |
+| NFR-07 (Argon2 hashes) | Done |
+| NFR-08 (secrets in environment variables) | Done; the app refuses to start on Vercel without `JWT_SECRET` |
+| NFR-09 (token lifetimes) | Access token 15 minutes done; refresh token planned |
+| NFR-10 (401 and 403) | Done |
+| NFR-11 (CORS) | Not needed: the frontend and the API share one domain |
+| NFR-12 (security headers) | Planned |
+| NFR-13 (availability) | Done |
