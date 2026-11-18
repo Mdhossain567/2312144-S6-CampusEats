@@ -20,6 +20,8 @@ The project is built in two releases:
 - **MVP (demo before mid-term):** the core features through REST APIs (menu CRUD, order placement, order status), a basic React UI, running locally with SQLite.
 - **Beta (demo before final):** authentication (JWT + refresh token), user roles (RBAC), user profile dashboard, security scopes and permissions, security hardening and deployment to Vercel with Supabase PostgreSQL.
 
+**Scope note (updated for the final demo).** The mid-term demo delivered the menu feature: menu item CRUD with pagination, search and filters (F-01, F-02) and the menu pages of the React UI (F-07), deployed on Vercel with Supabase. Orders (F-03 to F-06) were built in the Beta together with accounts and roles, so that every order belongs to a logged-in customer. Section 11 lists what is done and what is still planned.
+
 ## 2. Problem Statement and Goals
 
 **Problem.** During lunch hours, students wait in long cafeteria queues, orders are taken on paper or verbally, and the kitchen has no clear view of what to prepare next. Students lose class time and the kitchen loses track of orders.
@@ -166,3 +168,21 @@ In the MVP there is no login, so any client can call any endpoint. Roles are enf
 | Auth bugs expose data | Security failure | Central RBAC dependencies, review the permission matrix |
 | Deployment issues late | Final demo fails | Configure Vercel and Supabase early in Beta |
 | Team members blocked | Delays | Small issues, short branches, frequent PRs |
+
+## 11. Implementation Status (updated for the final demo)
+
+| Feature | Status |
+|---------|--------|
+| Menu item CRUD, pagination, search and filter (F-01, F-02) | Done (mid-term MVP) |
+| React menu pages (F-07) | Done |
+| Deployment on Vercel with Supabase PostgreSQL (F-14) | Done |
+| Register and login with Argon2 password hashes and a JWT access token (F-08) | Done; the refresh token is planned |
+| Login lockout: 5 failed attempts block login for 15 minutes (F-13) | Done |
+| Roles customer, kitchen staff and admin with role-based access control (F-10) | Done: only admins change the menu; orders follow the permission matrix |
+| Orders: place, my orders, cancel (F-03, F-04, F-06) | Done |
+| Kitchen board and order status steps (F-05) | Done |
+| Profile: view | Done; editing the name and changing the password are planned (F-09) |
+| Refresh token and server-side logout | Planned |
+| Admin user management and dashboard statistics (F-11, F-12) | Planned |
+| Security headers (F-13) | Planned |
+| Payment, notifications, loyalty points (F-15) | Out of scope |
