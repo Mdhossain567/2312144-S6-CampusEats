@@ -333,3 +333,43 @@ button:disabled {
   display: flex;
   gap: 8px;
 }
+
+
+/* ── Phase 1: sessions & profile ─────────────────────────────────────────── */
+
+.success {
+  color: #15803d;
+  background: #dcfce7;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #1677ff;
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+.btn-danger-sm {
+  padding: 4px 10px;
+  font-size: 13px;
+  color: #b42318;
+  background: #fdecea;
+  border: 1px solid #f5c6c2;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-danger-sm:hover {
+  background: #fecaca;
+}
+
+.badge-current {
+  font-size: 12px;
+  color: #1677ff;
+  font-weight: 600;
+}

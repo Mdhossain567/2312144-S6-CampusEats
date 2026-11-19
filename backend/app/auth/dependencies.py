@@ -1,7 +1,7 @@
 """Who is calling (authentication) and what they may do (authorization)."""
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.database import SessionDep
@@ -10,6 +10,8 @@ from app.users import repository
 from app.users.models import AppUser
 
 bearer = HTTPBearer(auto_error=False)
+
+REFRESH_COOKIE = "campuseats_refresh"
 
 
 def _unauthorized(message: str) -> HTTPException:
@@ -36,11 +38,15 @@ def get_current_user(
     except (KeyError, ValueError):
         raise _unauthorized("Invalid or expired token")
 
-    # The role and the active flag are read from the database on every request,
-    # so a change by an admin applies immediately, whatever the token says.
+    # Role, active flag, and ban status are read from the database on every
+    # request so an admin change applies immediately, whatever the token says.
     user = repository.get(session, user_id)
     if user is None or not user.is_active:
         raise _unauthorized("Invalid or expired token")
+
+    if user.is_banned:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Account is banned")
+
     return user
 
 
@@ -58,3 +64,8 @@ def require_roles(*allowed_roles: str):
         return user
 
     return check
+
+
+def get_refresh_token_from_cookie(request: Request) -> str | None:
+    """Read the raw refresh token from the httpOnly cookie."""
+    return request.cookies.get(REFRESH_COOKIE)

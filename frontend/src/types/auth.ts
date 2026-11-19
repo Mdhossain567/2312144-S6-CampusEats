@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string
   role: Role
   is_active: boolean
+  is_banned: boolean
   created_at: string
 }
 
@@ -25,4 +26,23 @@ export interface TokenResponse {
   token_type: string
   expires_in: number
   user: AuthUser
+}
+
+export interface ProfileUpdateInput {
+  name?: string
+  email?: string
+}
+
+export interface PasswordChangeInput {
+  current_password: string
+  new_password: string
+}
+
+export interface UserSession {
+  id: number
+  user_agent: string | null
+  ip_address: string | null
+  created_at: string
+  expires_at: string
+  is_current: boolean
 }
