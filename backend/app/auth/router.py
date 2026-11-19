@@ -3,6 +3,7 @@ import os
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
+from app.audit.repository import log_event
 from app.auth.dependencies import (
     CurrentUser,
     REFRESH_COOKIE,
@@ -63,12 +64,35 @@ def register(data: UserRegister, session: SessionDep):
 
 @router.post("/login", response_model=TokenResponse)
 def login(data: UserLogin, request: Request, response: Response, session: SessionDep):
-    user = service.authenticate(session, data.email, data.password)
-    access_token, expires_in = create_access_token(user.id, user.role)
-
     user_agent = request.headers.get("user-agent")
     ip_address = request.client.host if request.client else None
+
+    try:
+        user = service.authenticate(session, data.email, data.password)
+    except HTTPException:
+        log_event(
+            session,
+            action="FAILED_LOGIN",
+            user_email=data.email,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            details="Failed login attempt",
+        )
+        raise
+
+    access_token, expires_in = create_access_token(user.id, user.role)
+
     _, raw_refresh = sess_repo.create_session(session, user.id, user_agent, ip_address)
+
+    log_event(
+        session,
+        action="LOGIN",
+        user_id=user.id,
+        user_email=user.email,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        details="User logged in successfully",
+    )
 
     from app.config import REFRESH_TOKEN_DAYS
     _set_refresh_cookie(response, raw_refresh, max_age=REFRESH_TOKEN_DAYS * 86400)
@@ -127,6 +151,14 @@ def logout(request: Request, response: Response, session: SessionDep):
         db_session = sess_repo.get_by_token(session, raw_token)
         if db_session and not db_session.revoked:
             sess_repo.revoke(session, db_session)
+            log_event(
+                session,
+                action="LOGOUT",
+                user_id=db_session.user_id,
+                ip_address=request.client.host if request.client else None,
+                user_agent=request.headers.get("user-agent"),
+                details="Session revoked on logout",
+            )
     _clear_refresh_cookie(response)
 
 
@@ -170,6 +202,16 @@ def change_password(
         # No cookie — revoke everything
         for s in sess_repo.list_active(session, user.id):
             sess_repo.revoke(session, s)
+
+    log_event(
+        session,
+        action="PASSWORD_CHANGE",
+        user_id=user.id,
+        user_email=user.email,
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+        details="User changed password and revoked other sessions",
+    )
 
 
 @router.get("/sessions", response_model=list[SessionRead])
