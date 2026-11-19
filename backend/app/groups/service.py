@@ -557,13 +557,13 @@ def update_order_item(
     if item is None or item.group_order_id != order.id:
         raise _not_found("Order item not found")
 
-    # Permission check: must have 'can_edit' OR be the one who added the item
-    can_modify = perms.can_edit or (item.added_by_id == user.id)
-    if not can_modify:
+    is_editing_details = (data.quantity is not None) or (data.notes is not None)
+    is_assigning = data.assigned_to_id is not None
+
+    if is_editing_details and not (perms.can_edit or item.added_by_id == user.id):
         raise _forbidden("You do not have permission to edit this item (requires 'edit' permission)")
 
-    # If updating assignment, check 'can_assign'
-    if data.assigned_to_id is not None and not perms.can_assign:
+    if is_assigning and not perms.can_assign:
         raise _forbidden("You do not have permission to assign items to members")
 
     if data.quantity is not None:
