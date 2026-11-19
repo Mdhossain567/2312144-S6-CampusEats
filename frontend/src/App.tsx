@@ -3,6 +3,9 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { CartProvider, useCart } from './context/CartContext'
 import EditMenuItemPage from './pages/EditMenuItemPage'
+import AdminDashboardPage from './pages/AdminDashboardPage'
+import GroupDetailsPage from './pages/GroupDetailsPage'
+import GroupsPage from './pages/GroupsPage'
 import KitchenPage from './pages/KitchenPage'
 import LoginPage from './pages/LoginPage'
 import MenuItemDetailsPage from './pages/MenuItemDetailsPage'
@@ -35,6 +38,14 @@ function NavBar() {
                 Kitchen board
               </Link>
             )}
+            {user.role === 'admin' && (
+              <Link to="/admin" className="nav-link">
+                Admin
+              </Link>
+            )}
+            <Link to="/groups" className="nav-link">
+              Groups
+            </Link>
             {user.role === 'customer' && (
               <Link to="/orders" className="nav-link">
                 My orders{count > 0 ? ` (cart: ${count})` : ''}
@@ -78,6 +89,30 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/groups"
+                element={
+                  <ProtectedRoute>
+                    <GroupsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/groups/:groupId"
+                element={
+                  <ProtectedRoute>
+                    <GroupDetailsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute roles={['admin']}>
+                    <AdminDashboardPage />
                   </ProtectedRoute>
                 }
               />

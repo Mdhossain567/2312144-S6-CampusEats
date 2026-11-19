@@ -1,18 +1,42 @@
 import type {
+  AdminStats,
+  AdminUserDetail,
+  AdminUserPage,
+  AuditLogItem,
+  ContentItem,
+  SecurityReport,
+} from '../types/admin'
+import type {
   AuthUser,
   LoginInput,
   PasswordChangeInput,
   ProfileUpdateInput,
   RegisterInput,
+  Role,
   TokenResponse,
   UserSession,
 } from '../types/auth'
+import type {
+  GroupCreateInput,
+  GroupDetail,
+  GroupMember,
+  GroupMemberAddInput,
+  GroupMemberUpdateInput,
+  GroupOrder,
+  GroupOrderCreateInput,
+  GroupOrderItem,
+  GroupOrderItemInput,
+  GroupUpdateInput,
+  MealGroup,
+} from '../types/group'
 import type { Category, MenuItem, MenuItemInput, MenuItemPage } from '../types/menuItem'
 import type { Order, OrderPage, OrderRequestItem, OrderStatus } from '../types/order'
 
 const MENU = '/api/v1/menu'
 const AUTH = '/api/v1/auth'
 const ORDERS = '/api/v1/orders'
+const GROUPS = '/api/v1/groups'
+const ADMIN = '/api/v1/admin'
 
 // The access token lives in memory only (not localStorage) so it is not
 // reachable by injected scripts.  The httpOnly refresh cookie is used to
@@ -251,3 +275,186 @@ export function updateOrderStatus(id: number, status: OrderStatus) {
     body: JSON.stringify({ status }),
   })
 }
+
+// ---------------------------------------------------------------------------
+// Meal Groups & Group Orders (Fine-Grained Permissions)
+// ---------------------------------------------------------------------------
+
+export function listGroups() {
+  return request<MealGroup[]>(GROUPS)
+}
+
+export function getGroup(id: number) {
+  return request<GroupDetail>(`${GROUPS}/${id}`)
+}
+
+export function createGroup(data: GroupCreateInput) {
+  return request<MealGroup>(GROUPS, { method: 'POST', body: JSON.stringify(data) })
+}
+
+export function updateGroup(id: number, data: GroupUpdateInput) {
+  return request<MealGroup>(`${GROUPS}/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
+}
+
+export function deleteGroup(id: number) {
+  return request<void>(`${GROUPS}/${id}`, { method: 'DELETE' })
+}
+
+export function addGroupMember(groupId: number, data: GroupMemberAddInput) {
+  return request<GroupMember>(`${GROUPS}/${groupId}/members`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function updateMemberPermissions(
+  groupId: number,
+  userId: number,
+  data: GroupMemberUpdateInput,
+) {
+  return request<GroupMember>(`${GROUPS}/${groupId}/members/${userId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export function removeGroupMember(groupId: number, userId: number) {
+  return request<void>(`${GROUPS}/${groupId}/members/${userId}`, { method: 'DELETE' })
+}
+
+export function createGroupOrder(groupId: number, data: GroupOrderCreateInput) {
+  return request<GroupOrder>(`${GROUPS}/${groupId}/orders`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function addGroupOrderItem(groupId: number, orderId: number, data: GroupOrderItemInput) {
+  return request<GroupOrderItem>(`${GROUPS}/${groupId}/orders/${orderId}/items`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function updateGroupOrderItem(
+  groupId: number,
+  orderId: number,
+  itemId: number,
+  data: Partial<GroupOrderItemInput>,
+) {
+  return request<GroupOrderItem>(`${GROUPS}/${groupId}/orders/${orderId}/items/${itemId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deleteGroupOrderItem(groupId: number, orderId: number, itemId: number) {
+  return request<void>(`${GROUPS}/${groupId}/orders/${orderId}/items/${itemId}`, {
+    method: 'DELETE',
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Admin Dashboard
+// ---------------------------------------------------------------------------
+
+export function getAdminStats() {
+  return request<AdminStats>(`${ADMIN}/stats`)
+}
+
+export function listAdminUsers(
+  offset: number,
+  limit: number,
+  q?: string,
+  role?: string,
+  status?: string,
+) {
+  const params = new URLSearchParams({ offset: String(offset), limit: String(limit) })
+  if (q) params.set('q', q)
+  if (role) params.set('role', role)
+  if (status) params.set('status', status)
+  return request<AdminUserPage>(`${ADMIN}/users?${params.toString()}`)
+}
+
+export function getAdminUserDetail(userId: number) {
+  return request<AdminUserDetail>(`${ADMIN}/users/${userId}`)
+}
+
+export function banUser(userId: number, reason: string) {
+  return request<void>(`${ADMIN}/users/${userId}/ban`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export function unbanUser(userId: number) {
+  return request<void>(`${ADMIN}/users/${userId}/unban`, { method: 'POST' })
+}
+
+export function changeUserRole(userId: number, role: Role) {
+  return request<void>(`${ADMIN}/users/${userId}/role`, {
+    method: 'POST',
+    body: JSON.stringify({ role }),
+  })
+}
+
+export function revokeAdminUserSessions(userId: number) {
+  return request<void>(`${ADMIN}/users/${userId}/revoke-sessions`, { method: 'POST' })
+}
+
+export function bulkBanUsers(userIds: number[], reason: string) {
+  return request<{ affected: number; skipped: number }>(`${ADMIN}/users/bulk-ban`, {
+    method: 'POST',
+    body: JSON.stringify({ user_ids: userIds, reason }),
+  })
+}
+
+export function bulkUnbanUsers(userIds: number[]) {
+  return request<{ affected: number; skipped: number }>(`${ADMIN}/users/bulk-unban`, {
+    method: 'POST',
+    body: JSON.stringify({ user_ids: userIds }),
+  })
+}
+
+export function listAdminContent(
+  type: 'orders' | 'menu' | 'groups',
+  offset: number,
+  limit: number,
+  search?: string,
+) {
+  const params = new URLSearchParams({ type, offset: String(offset), limit: String(limit) })
+  if (search) params.set('q', search)
+  return request<{ items: ContentItem[]; total: number }>(`${ADMIN}/content?${params.toString()}`)
+}
+
+export function deleteAdminContentItem(type: 'orders' | 'menu' | 'groups', id: number) {
+  return request<void>(`${ADMIN}/content/${type}/${id}`, { method: 'DELETE' })
+}
+
+export function bulkDeleteAdminContent(type: 'orders' | 'menu' | 'groups', ids: number[]) {
+  return request<{ deleted: number }>(`${ADMIN}/content/bulk-delete`, {
+    method: 'POST',
+    body: JSON.stringify({ type, ids }),
+  })
+}
+
+export function listAuditLogs(
+  offset: number,
+  limit: number,
+  action?: string,
+  userId?: number,
+  search?: string,
+) {
+  const params = new URLSearchParams({ offset: String(offset), limit: String(limit) })
+  if (action) params.set('action', action)
+  if (userId) params.set('user_id', String(userId))
+  if (search) params.set('q', search)
+  return request<{ items: AuditLogItem[]; total: number }>(
+    `${ADMIN}/audit-logs?${params.toString()}`,
+  )
+}
+
+export function getSecurityReport() {
+  return request<SecurityReport>(`${ADMIN}/security`)
+}
+
