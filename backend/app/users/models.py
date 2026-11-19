@@ -1,5 +1,6 @@
 """The app_user database table."""
 from datetime import datetime
+from typing import Optional
 
 from sqlmodel import Field, SQLModel
 
@@ -19,6 +20,10 @@ class AppUser(SQLModel, table=True):
     is_active: bool = Field(default=True)
     # Login lockout: counted failures and the time until which login is blocked.
     failed_logins: int = Field(default=0)
-    locked_until: datetime | None = Field(default=None)
-    last_login_at: datetime | None = Field(default=None)
+    locked_until: Optional[datetime] = Field(default=None)
+    last_login_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=utc_now)
+    # Ban fields: set by an admin. A banned user is rejected on every request.
+    is_banned: bool = Field(default=False)
+    banned_at: Optional[datetime] = Field(default=None)
+    ban_reason: Optional[str] = Field(default=None, max_length=500)

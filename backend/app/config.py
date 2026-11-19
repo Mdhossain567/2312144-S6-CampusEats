@@ -33,3 +33,9 @@ def _jwt_secret() -> str:
 JWT_SECRET = _jwt_secret()
 ACCESS_TOKEN_MINUTES = int(os.getenv("ACCESS_TOKEN_MINUTES", "15"))
 REFRESH_TOKEN_DAYS = int(os.getenv("REFRESH_TOKEN_DAYS", "7"))
+
+# Server-side pepper mixed into every password hash so a database dump alone
+# is not enough to crack passwords.  Set PASSWORD_PEPPER on Vercel.
+PASSWORD_PEPPER: str = os.getenv(
+    "PASSWORD_PEPPER", "campuseats-local-dev-pepper-change-in-prod"
+)

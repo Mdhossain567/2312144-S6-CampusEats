@@ -17,8 +17,8 @@ function NavBar() {
   const { user, logout } = useAuth()
   const { clear, count } = useCart()
 
-  function handleLogout() {
-    logout()
+  async function handleLogout() {
+    await logout()
     clear()
   }
 

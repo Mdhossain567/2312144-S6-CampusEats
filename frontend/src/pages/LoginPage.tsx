@@ -4,7 +4,7 @@ import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function LoginPage() {
-  const { user, login, sessionExpired } = useAuth()
+  const { user, loading, login, sessionExpired, bannedMessage } = useAuth()
   const location = useLocation()
   const from = (location.state as { from?: string } | null)?.from ?? '/'
 
@@ -13,9 +13,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  if (user) {
-    return <Navigate to={from} replace />
-  }
+  if (loading) return <p className="muted">Loading…</p>
+  if (user) return <Navigate to={from} replace />
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -41,7 +40,10 @@ export default function LoginPage() {
       <h1>Log in</h1>
       <p className="muted">Log in to place orders and manage your account.</p>
 
-      {sessionExpired && <p className="error">Your session ended. Please log in again.</p>}
+      {bannedMessage && <p className="error">{bannedMessage}</p>}
+      {sessionExpired && !bannedMessage && (
+        <p className="error">Your session ended. Please log in again.</p>
+      )}
 
       <form className="form" onSubmit={handleSubmit}>
         {error && <p className="error">{error}</p>}

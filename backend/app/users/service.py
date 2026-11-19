@@ -1,4 +1,4 @@
-"""Business rules for registering and logging in."""
+"""Business rules for registering, logging in, and managing accounts."""
 from datetime import timedelta
 
 from fastapi import HTTPException, status
@@ -9,7 +9,7 @@ from app.clock import as_utc, utc_now
 from app.security import DUMMY_HASH, hash_password, verify_password
 from app.users import repository
 from app.users.models import AppUser
-from app.users.schemas import UserRegister
+from app.users.schemas import PasswordChange, ProfileUpdate, UserRegister
 
 MAX_FAILED_LOGINS = 5
 LOCK_MINUTES = 15
@@ -71,7 +71,53 @@ def authenticate(session: Session, email: str, password: str) -> AppUser:
     if not user.is_active:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Account is deactivated")
 
+    if user.is_banned:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Account is banned")
+
     user.failed_logins = 0
     user.locked_until = None
     user.last_login_at = now
+    return repository.save(session, user)
+
+
+def update_profile(session: Session, user: AppUser, data: ProfileUpdate) -> AppUser:
+    if data.name is not None:
+        user.name = data.name
+    if data.email is not None and data.email != user.email:
+        existing = repository.get_by_email(session, data.email)
+        if existing and existing.id != user.id:
+            raise _email_taken()
+        user.email = data.email
+    return repository.save(session, user)
+
+
+def change_password(
+    session: Session, user: AppUser, data: PasswordChange
+) -> AppUser:
+    """Verify current password then update to the new one.
+
+    Wrong current password is treated like a login failure (counted for lockout).
+    """
+    now = utc_now()
+    if user.locked_until is not None and as_utc(user.locked_until) > now:
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            "Too many failed attempts. Try again later.",
+        )
+
+    if not verify_password(data.current_password, user.password_hash):
+        user.failed_logins += 1
+        if user.failed_logins >= MAX_FAILED_LOGINS:
+            user.locked_until = now + timedelta(minutes=LOCK_MINUTES)
+            user.failed_logins = 0
+        repository.save(session, user)
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "Current password is incorrect",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user.password_hash = hash_password(data.new_password)
+    user.failed_logins = 0
+    user.locked_until = None
     return repository.save(session, user)
