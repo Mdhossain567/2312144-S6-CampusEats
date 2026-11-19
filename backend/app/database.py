@@ -54,6 +54,7 @@ def _migrate(conn) -> None:
 def init_db() -> None:
     """Create the tables that do not exist yet, then apply safe column migrations."""
     import app.audit.models  # noqa: F401  (registers the table)
+    import app.groups.models  # noqa: F401  (registers the table)
     import app.menu_items.models  # noqa: F401  (registers the table)
     import app.orders.models  # noqa: F401  (registers the tables)
     import app.users.models  # noqa: F401  (registers the table)
