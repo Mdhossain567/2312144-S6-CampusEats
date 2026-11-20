@@ -1,40 +1,115 @@
 # CampusEats
 
-CampusEats is a cafeteria ordering system where students and staff can browse the university cafeteria menu, place food orders, and track their order status. Cafeteria managers manage menu items, and kitchen staff view incoming orders and update their preparation status. It is built with React + TypeScript and FastAPI REST APIs, with accounts, Argon2 password hashing, token-based login and role-based access control.
+CampusEats is a campus cafeteria ordering system. Students and staff browse the cafeteria menu, place orders and follow their status. Kitchen staff prepare the orders, and administrators manage the menu, the users and the whole system. It is a multi-user application with token-based login, role-based access control, shared meal groups and an admin dashboard.
 
-**Status:** the menu feature (MVP) and the Beta features for accounts, roles and orders are built and deployed on Vercel with Supabase PostgreSQL. The refresh token with a server-side logout, profile editing and the admin user screens are planned.
+| | |
+|---|---|
+| **Live app** | https://2312144-s6-campuseats.vercel.app |
+| **API docs** | https://2312144-s6-campuseats.vercel.app/api/docs |
+| **Release** | v0.2.0 (final submission) |
+| **Course** | CSE309, Autumn 2026 |
+
+## Status
+
+All planned features are implemented, covered by automated tests (`pytest`) and deployed on Vercel with a hosted Supabase PostgreSQL database.
+
+| Release | What it delivered |
+|---------|-------------------|
+| v0.1.0 (MVP) | Menu item CRUD with pagination, search and filters, deployed on Vercel |
+| v0.1.5 (Beta) | Accounts and login, roles, orders, cart and kitchen board |
+| v0.2.0 (Final) | Sessions and refresh tokens, password pepper, profile and password change, central RBAC, meal groups with permissions, admin dashboard, audit log, migrations, seed data and tests |
 
 ## Features
 
-**MVP (demo before mid-term)**
+### Menu and orders
+- Menu items with category, price and availability: create, list (paginated, with search and a category filter), view, update and delete, through a REST API and React pages. Only admins change the menu; everybody can read it.
+- Customers use a cart, place orders and follow them on a "My orders" page, and can cancel an order while it is pending.
+- Kitchen staff use a kitchen board that moves orders through pending, preparing, ready and completed.
+- The server calculates every total from the menu prices and keeps the name and price of each item inside the order, so later menu changes do not change old orders.
 
-- Create, list (with pagination, category filter and search), view, update and delete menu items through a REST API (`/api/v1/menu`)
-- React pages for the menu list, item details, add and edit
-- Input validation with clear error responses
-- Interactive API docs at `/api/docs`
+### Authentication and sessions
+- Sign up and log in. Passwords are stored only as **Argon2id** hashes, mixed with a secret **pepper** (`PASSWORD_PEPPER`) kept in an environment variable.
+- A signed **JWT access token** that lives 15 minutes and contains the user id (`sub`) and the role. It is checked on every protected request. A missing, invalid, tampered or expired token returns `401`.
+- A **rotating 7-day refresh token** in an `httpOnly` cookie, stored on the server in the `user_session` table. Logging out invalidates the session on the server.
+- Users can list their active sessions (device, IP address, times) and revoke any of them.
+- Profile update and password change (the current password is required, the new one is validated).
+- **Brute-force protection:** 5 failed logins lock the account temporarily (`429`). A wrong email and a wrong password give the same error message.
+- The frontend refreshes or logs out when the server rejects a token, and does not flash guest content while a session is being restored.
 
-**Beta (demo before final)**
+### Roles and access control (RBAC)
+- Three roles stored in the database: `customer`, `kitchen_staff` and `admin`. (In the course specification, "user" means a customer or a kitchen staff member.)
+- One central module, `backend/app/auth/rbac.py`, with the permissions and the reusable dependencies used by the endpoints. The role is read from the database on every request, not trusted from the token.
+- **Ownership rules:** a normal user can only read, change or cancel their own records. Another user's record returns `403` or `404`.
+- **Banned users** are rejected on their very next request with `403`, are logged out of the interface within seconds, and cannot log in.
+- **Safety rules:** an admin cannot ban another admin, cannot ban themselves, and cannot change or lower their own role.
+- The React app has route guards and role-based menus that match the server rules. The server is the real protection.
 
-- Sign up and log in; passwords are stored only as Argon2id hashes; a JWT access token (15 minutes)
-- Login lockout: 5 failed attempts block login for 15 minutes
-- Roles: customer, kitchen staff, admin, enforced on the server
-- Only admins add, edit or delete menu items
-- Customers: a cart, placing an order and a "My orders" page with statuses and cancelling
-- Kitchen staff and admins: a kitchen board that moves orders through pending, preparing, ready and completed
-- Profile page (view)
+### Meal groups (shared resource)
+Customers can share an order list in a meal group, and every member has different permissions:
+- **Owner:** the only one who can rename or delete the group and manage its members and their permissions.
+- **`can_create`:** add items to the group order.
+- **`can_edit`:** change quantities or instructions of items.
+- **`can_assign`:** assign items to members.
+- Actions without the needed permission are refused by the server (`403`).
 
-**Planned**
+### Admin dashboard
+- Overview statistics: total users, banned users, orders, groups and new sign-ups in the last 7 days.
+- Users: search, filters by role and status, pagination and a detail view with the user's records, groups, sessions and recent activity.
+- Actions: ban and unban with a reason (single and bulk), role change, revoke sessions.
+- Content moderation: lists of orders and groups with filters, and single or bulk delete.
+- **Audit log:** login, failed login, logout, password change, role change, ban, delete and export events, with the user, IP address, browser and time, searchable and filterable.
+- Security view: failed logins by IP address and by account.
+- CSV exports of users, records and activity that respect the current filters.
 
-- Refresh token and logout on the server, profile editing and password change
-- Admin user management and statistics, security headers
+### Quality
+- Database schema managed with **Alembic** migrations.
+- A **seed script** for demo data (see below).
+- Automated **pytest** tests for login, lockout, token rejection and the access-control rules.
+- No secrets in the repository (only `.env.example`). CORS is limited to the frontend origin.
 
-## User roles
+## Roles and permissions (summary)
 
-- **Customer:** browse the menu, place orders, see and cancel own pending orders.
-- **Kitchen staff:** see all orders and move them through the status steps.
-- **Admin:** manage menu items, see all orders, do everything kitchen staff can do.
+| Action | Customer | Kitchen staff | Admin |
+|--------|:--------:|:-------------:|:-----:|
+| Browse the menu | Yes | Yes | Yes |
+| Add, edit or delete menu items | No | No | Yes |
+| Place an order and see own orders | Yes | No | No |
+| See all orders | No | Yes | Yes |
+| Change an order's status | No | Yes | Yes |
+| Use the admin dashboard, manage users | No | No | Yes |
 
-Everyone registers as a customer. See "Making an admin or kitchen account" below.
+The complete matrix, with the ownership and group rules, is in `docs/02-srs.md` and `docs/FINAL_REPORT.md`.
+
+## Demo accounts and shared group (for the instructor)
+
+**Passwords are not written in this repository.** They are provided in the instructor submission form and in the PDF report.
+
+| User ID (email) | Name | Role | Notes |
+|-----------------|------|------|-------|
+| `admin1@campuseats.com` | Chief Administrator | `admin` | Full admin dashboard |
+| `admin2@campuseats.com` | Auditor Admin | `admin` | Second admin, for the "cannot ban another admin" rule |
+| `chef@campuseats.com` | Chef Mario | `kitchen_staff` | Kitchen board |
+| `alice@campuseats.com` | Alice Student | `customer` | Owner of the shared group |
+| `bob@campuseats.com` | Bob Fellow | `customer` | Group member |
+| `charlie@campuseats.com` | Charlie Staff | `customer` | Group member |
+| `banned@campuseats.com` | Suspended Account | `customer` | Banned, to check the `403` response |
+
+**Shared group: "Faculty & Student Lunch Club"**
+
+| Member | Group role | `can_create` | `can_edit` | `can_assign` |
+|--------|-----------|:------------:|:----------:|:------------:|
+| Alice | Owner | Yes | Yes | Yes (and manages the group) |
+| Bob | Member | Yes | Yes | No |
+| Charlie | Member | Yes | No | Yes |
+
+Sample data (menu items and orders) is created by the seed script.
+
+**Quick checks for the instructor**
+- Log in as `alice` or `bob`, open a group and try to assign an item as Bob: the server refuses (`403`).
+- Log in as `charlie` and try to edit an item: the server refuses (`403`).
+- Try to log in as `banned@campuseats.com`: the account is refused (`403`).
+- Log in as `admin1` and open the admin dashboard: statistics, users, ban and unban with a reason, audit log, security view and CSV export.
+- Log in as `chef` and open the kitchen board to move an order forward.
 
 ## Tech stack
 
@@ -42,78 +117,70 @@ Everyone registers as a customer. See "Making an admin or kitchen account" below
 |------|--------|
 | Frontend | React + TypeScript + Vite + React Router |
 | Backend | Python 3.10+, FastAPI, SQLModel |
-| API | REST, JSON (`application/json`) |
-| Security | Argon2id (`argon2-cffi`), JWT (`PyJWT`) |
+| Security | Argon2id (`argon2-cffi`) with a pepper, JWT (`PyJWT`), `httpOnly` refresh cookie |
 | Database | Supabase PostgreSQL (production), SQLite (local) |
+| Migrations | Alembic |
+| Tests | pytest |
 | Hosting | Vercel (frontend and backend in one project) |
-
-## Documentation
-
-| Doc | What it covers |
-|-----|----------------|
-| [PRD](docs/01-prd.md) | Goals, features, user stories, milestones, implementation status |
-| [SRS](docs/02-srs.md) | Requirements, use cases, permissions, acceptance criteria, implementation status |
-| [TDD](docs/03-tdd.md) | Architecture, data model, API endpoints, authentication and security, deployment |
 
 ## Project structure
 
 ```text
 backend/
-  main.py             FastAPI app entry point
-  scripts/set_role.py change the role of an account
+  main.py                    FastAPI app entry point
+  alembic/                   database migrations
+  scripts/seed.py            demo accounts and sample data
+  scripts/set_role.py        change the role of an account
+  tests/                     pytest tests (login, tokens, access control)
   app/
-    config.py         settings from environment variables
-    security.py       password hashing and tokens
-    database.py       engine and session
-    menu_items/       menu feature
-    users/            accounts
-    auth/             current user and roles, register and login endpoints
-    orders/           orders feature
+    config.py, security.py, database.py, clock.py
+    menu_items/              menu feature
+    users/                   accounts
+    auth/                    login, sessions, current user, rbac.py
+    orders/                  orders and the kitchen workflow
+    groups/                  meal groups and member permissions
+    admin/                   admin dashboard endpoints
+    audit/                   audit log
 frontend/
   src/
-    components/       menu item form, cart panel, protected route
-    context/          login state and cart
-    pages/            menu, login, register, profile, My orders, kitchen board
-    services/         api.ts, the only place that calls the backend
-    types/            TypeScript types
-docs/                 PRD, SRS, TDD
-vercel.json           /api/* goes to the backend, everything else to the frontend
+    components/              reusable parts and route guards
+    context/                 login state and cart
+    pages/                   menu, login, orders, kitchen, groups, admin and more
+    services/                api.ts, the only place that calls the backend
+    types/                   TypeScript types
+docs/                        PRD, SRS, TDD and the final report
+vercel.json                  /api/* goes to the backend, everything else to the frontend
 ```
 
-## API (summary)
+## API overview
 
-| Area | Endpoints |
-|------|-----------|
-| Menu | `GET /api/v1/menu` (paged, public), `GET /api/v1/menu/{id}`, `POST`, `PATCH` and `DELETE` (admin only) |
-| Accounts | `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me` |
-| Orders | `POST /api/v1/orders` (customer), `GET /orders/my` (customer), `GET /orders` (kitchen staff, admin), `GET /orders/{id}`, `PATCH /orders/{id}/status` (kitchen staff, admin), `POST /orders/{id}/cancel` |
+Every list returns `{items, total, offset, limit}`. The complete and current list of endpoints, with their request and response shapes, is at `/api/docs`.
 
-All lists return `{items, total, offset, limit}`. Full details are in the TDD and at `/api/docs`.
-
-## Requirements
-
-- Python 3.10+
-- Node.js 22+
-
-On macOS/Linux, use `python3` instead of `python`.
+| Area | Examples |
+|------|----------|
+| Menu | `GET /api/v1/menu` (public), `POST`, `PATCH`, `DELETE` (admin) |
+| Authentication | `POST /api/v1/auth/register`, `/login`, `/refresh`, `/logout`; `GET /api/v1/auth/me`; sessions, profile update and password change under `/api/v1/auth` |
+| Orders | place an order, my orders, all orders and status changes (kitchen staff and admin), cancel |
+| Groups | create a group, manage members and permissions, add, edit and assign items |
+| Admin | statistics, users (ban, unban, role, sessions), moderation, audit log, security view, CSV exports |
 
 ## Run locally
 
-You need two terminals. Data is saved in a local SQLite file, `backend/campuseats.db`, created automatically and not committed.
+You need Python 3.10+ and Node.js 22+. On macOS or Linux use `python3` instead of `python`.
 
-**First time**
-
-Backend (terminal 1):
+**Backend** (terminal 1)
 
 ```bash
 cd backend
 python -m venv .venv
 .venv\Scripts\Activate.ps1      # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
+alembic upgrade head            # creates the tables
+python -m scripts.seed          # demo accounts and sample data (local use)
 fastapi dev main.py
 ```
 
-Frontend (terminal 2):
+**Frontend** (terminal 2)
 
 ```bash
 cd frontend
@@ -121,65 +188,68 @@ npm install
 npm run dev
 ```
 
-**Running again**
-
-Activate the virtual environment and run `fastapi dev main.py` in `backend`, then `npm run dev` in `frontend`. Run `pip install -r requirements.txt` or `npm install` again only when a dependency changes.
-
 Open http://localhost:5173. Vite forwards `/api` requests to the backend on port 8000. API docs: http://localhost:8000/api/docs.
 
-**Reset the local data:** stop the backend and delete `backend/campuseats.db`.
+Locally `DATABASE_URL` is empty, so the app uses the SQLite file `backend/campuseats.db`. To start again, stop the backend, delete that file and run `alembic upgrade head` once more.
 
-## Making an admin or kitchen account
+## Tests
 
-Everyone registers as a customer. To change a role:
+```bash
+cd backend
+pytest -v
+```
 
-- **Locally:** register the account in the app, then run this in `backend/`:
-  ```bash
-  python scripts/set_role.py you@example.com admin
-  ```
-  Use `kitchen_staff` for a kitchen account.
-- **On Supabase:** register the account on the live site, then open Table Editor, `app_user`, and change the `role` cell of that row.
+The tests cover login and the brute-force lockout, rejection of missing, expired and tampered tokens, ownership rules, group permissions, the admin safety rule (an admin cannot ban another admin) and the immediate rejection of a banned user.
 
 ## Environment variables
 
-Locally nothing needs to be set. In production set variables in Vercel under Project > Settings > Environment Variables. Never commit secrets or `.env` files.
+Never commit secrets or a `.env` file. `.env.example` lists the names only. In production, set them in Vercel under Project > Settings > Environment Variables.
 
 | Variable | Notes |
 |----------|-------|
-| `DATABASE_URL` | The Supabase **transaction pooler** URL (port 6543), for example `postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres`. Leave it unset locally to use SQLite. If the password has special characters, URL-encode them (`@` becomes `%40`) |
-| `POSTGRES_URL` | Used when `DATABASE_URL` is not set |
-| `JWT_SECRET` | A long random string, for example `python -c "import secrets; print(secrets.token_urlsafe(48))"`. **Required on Vercel**: the app refuses to start without it. A fixed development value is used locally |
-| `ACCESS_TOKEN_MINUTES` | Default 15 |
-| `REFRESH_TOKEN_DAYS` | Default 7 (for the planned refresh token) |
+| `DATABASE_URL` | The Supabase **transaction pooler** URL (port 6543). Leave it empty locally to use SQLite. URL-encode special characters in the password |
+| `JWT_SECRET` | A long random string that signs the access tokens. Required in production: the app refuses to start without it |
+| `PASSWORD_PEPPER` | A long random secret mixed into every password before hashing. Required in production. Never change it after users exist |
+| `FRONTEND_ORIGIN` | The deployed frontend URL, used to limit CORS (`https://2312144-s6-campuseats.vercel.app`) |
+| `ACCESS_TOKEN_MINUTES` | Access token lifetime, 15 by default |
+| `REFRESH_TOKEN_DAYS` | Refresh token lifetime, 7 by default |
 
-Vercel cannot keep a SQLite file between requests, so without `DATABASE_URL` the deployed app would lose its data.
+A random secret can be made with `python -c "import secrets; print(secrets.token_urlsafe(48))"`.
 
-## Deploy to Vercel
+## Deployment (Vercel and Supabase)
 
-1. Push the repo to GitHub.
-2. Go to https://vercel.com/new, import the repo and click Deploy. Keep Root Directory as `./`.
-3. Add `DATABASE_URL` and `JWT_SECRET` (Production and Preview) and redeploy.
-4. Register an account on the live site and make it an admin (see above).
+1. Push the repository to GitHub and import it on https://vercel.com/new. Keep the root directory as `./`.
+2. Set `DATABASE_URL`, `JWT_SECRET`, `PASSWORD_PEPPER` and `FRONTEND_ORIGIN` for Production and Preview.
+3. Run `alembic upgrade head` against the Supabase database from your own machine, **before** you deploy code that needs a new table or column. Use the Supabase session pooler for migrations. Back up the database first.
+4. Load the demo data with `python -m scripts.seed` only on a database you accept to fill with demo accounts.
+5. Open the live site and the API docs page and test login, refresh, access control, groups and the admin dashboard.
 
-Every push to `main` redeploys automatically.
+Every push to `main` redeploys automatically. `frontend/vercel.json` rewrites every path to `index.html`, so deep links and page reloads work.
 
-## Contributing
+## Documentation
+
+| Document | What it covers |
+|----------|----------------|
+| [PRD](docs/01-prd.md) | Goals, users, features, milestones |
+| [SRS](docs/02-srs.md) | Requirements, permissions, acceptance criteria |
+| [TDD](docs/03-tdd.md) | Architecture, data model, endpoints, security design |
+| [Final report](docs/FINAL_REPORT.md) | The three documents together with testing and live deployment evidence |
+
+## Working with Git
 
 Every change starts from a GitHub issue.
 
-- Branch: `mdhossain/#{issue_number}-{task_title}`
-- Commit: `<type>: <summary> (#issue)`, for example `feat: add the order tables (#21)`
-- Pull request title: `<type>: <summary> (#issue)`; description with Summary, Changes, How it was tested and Notes
-- Each pull request ends with `Ref #{issue_number}`; the last pull request for an issue uses `Closes #{issue_number}`
+- Branch: `mdhossain/#{issue}-{short-title}`
+- Commit: `<type>: <summary> (#issue)`
+- Pull request: title `<type>: <summary> (#issue)`, a description with Summary, Changes, How it was tested and Notes, ending with `Ref #{issue}` (the last pull request of an issue uses `Closes #{issue}`)
 
 ## Troubleshooting
 
 - "Running scripts is disabled" in PowerShell: run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 - `fastapi` not found: activate the virtual environment first.
-- `ModuleNotFoundError` for `sqlmodel`, `psycopg`, `jwt` or `argon2`: run `pip install -r requirements.txt` inside the activated virtual environment.
-- "Request failed" in the app: the backend isn't running, or `DATABASE_URL` is wrong.
-- 500 `FUNCTION_INVOCATION_FAILED` on Vercel: check the runtime logs; usually `JWT_SECRET` or `DATABASE_URL` is missing for that environment, or the Supabase project is paused.
-- "password authentication failed" with Supabase: check the password in `DATABASE_URL` and URL-encode special characters, or reset the database password to letters and numbers only.
-- Locked out after failed logins: wait 15 minutes.
-- Data looks wrong locally: stop the backend and delete `backend/campuseats.db`; it is recreated on the next start.
-- Vercel build fails: check the Build Logs, and make sure `npm run build` works in `frontend/`.
+- A missing module such as `argon2`, `jwt` or `psycopg`: run `pip install -r requirements.txt` inside the activated environment.
+- "no such table" locally: run `alembic upgrade head` in `backend/`.
+- The app refuses to start in production: set `JWT_SECRET` and `PASSWORD_PEPPER` in the Vercel variables.
+- 500 `FUNCTION_INVOCATION_FAILED` on Vercel: read the runtime logs; usually a variable is missing for that environment or the Supabase project is paused.
+- "password authentication failed" with Supabase: check the password in `DATABASE_URL` and URL-encode special characters.
+- Account locked after failed logins: wait for the lock time to pass.
