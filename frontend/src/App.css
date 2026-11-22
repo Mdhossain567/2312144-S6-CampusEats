@@ -445,3 +445,15 @@ button:disabled {
 .action-user_unban { background: #ecfdf5; color: #047857; }
 .action-content_delete { background: #fff1f2; color: #be123c; }
 .action-export_csv { background: #f0fdf4; color: #166534; }
+/* Demo login buttons */
+.demo-box {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid #e3e6ec;
+}
+
+.demo-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}

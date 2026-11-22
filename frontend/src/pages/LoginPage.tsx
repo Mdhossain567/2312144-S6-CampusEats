@@ -3,6 +3,20 @@ import type { FormEvent } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
+// The demo buttons appear only when all four values are set when the app is built.
+const env = import.meta.env as Record<string, string | undefined>
+const demoAdmin = {
+  email: env.VITE_DEMO_ADMIN_EMAIL ?? '',
+  password: env.VITE_DEMO_ADMIN_PASSWORD ?? '',
+}
+const demoCustomer = {
+  email: env.VITE_DEMO_CUSTOMER_EMAIL ?? '',
+  password: env.VITE_DEMO_CUSTOMER_PASSWORD ?? '',
+}
+const demoEnabled = Boolean(
+  demoAdmin.email && demoAdmin.password && demoCustomer.email && demoCustomer.password,
+)
+
 export default function LoginPage() {
   const { user, loading, login, sessionExpired, bannedMessage } = useAuth()
   const location = useLocation()
@@ -28,6 +42,18 @@ export default function LoginPage() {
     setSaving(true)
     try {
       await login({ email: email.trim(), password })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDemo(demoEmail: string, demoPassword: string) {
+    setError('')
+    setSaving(true)
+    try {
+      await login({ email: demoEmail, password: demoPassword })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -74,6 +100,28 @@ export default function LoginPage() {
           </button>
         </div>
       </form>
+
+      {demoEnabled && (
+        <div className="demo-box">
+          <p className="muted">Try the demo (sample data only)</p>
+          <div className="demo-buttons">
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => handleDemo(demoAdmin.email, demoAdmin.password)}
+            >
+              Demo Admin
+            </button>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => handleDemo(demoCustomer.email, demoCustomer.password)}
+            >
+              Demo Customer
+            </button>
+          </div>
+        </div>
+      )}
 
       <p className="muted">
         No account yet? <Link to="/register">Sign up</Link>
