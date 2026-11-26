@@ -315,7 +315,7 @@ The three permissions are stored as the switches can\_create, can\_edit and can\
 
 **Figure 2\. Use case diagram**
 
-```
+```mermaid
 flowchart LR
     V([Visitor]) --> UC1(Sign up)
     V --> UC2(Log in)
@@ -438,7 +438,7 @@ Endpoint paths are listed in Table 20\. `test_auth.py` and `test_rbac.py` are in
 
 **Figure 1\. System architecture**
 
-```
+```mermaid
 flowchart LR
     B[Browser: React app] -->|1. load pages| F[Vercel frontend service]
     B -->|2. /api requests with Authorization header| A[Vercel API service: FastAPI]
@@ -500,7 +500,7 @@ frontend/
 
 **Figure 5\. ER diagram**
 
-```
+```mermaid
 erDiagram
     APP_USER ||--o{ USER_SESSION : has
     APP_USER ||--o{ CUSTOMER_ORDER : places
@@ -725,7 +725,7 @@ All paths start with `/api/v1`, except `/api/health`. Requests and responses are
 
 **Figure 6\. JWT sequence**
 
-```
+```mermaid
 sequenceDiagram
     participant B as Browser (React)
     participant A as API (FastAPI)
@@ -770,7 +770,7 @@ sequenceDiagram
 
 **Figure 7\. Authorisation flow**
 
-```
+```mermaid
 flowchart TD
     R[Request] --> T{Valid token?}
     T -- no --> E1[401]
@@ -825,7 +825,7 @@ def require_permission(permission: str | Permission):
 
 **Figure 8\. Admin pages and the endpoints they call**
 
-```
+```mermaid
 flowchart LR
     O[Overview] --> E1[/api/v1/admin/stats]
     U[Users and user detail] --> E2[/api/v1/admin/users]
@@ -874,7 +874,7 @@ CampusEats is one Vercel project with two services. The root vercel.json defines
 
 **Figure 9\. Deployment layout**
 
-```
+```mermaid
 flowchart LR
     G[GitHub main branch] -->|push triggers a build| V[Vercel project]
     V --> FE[Frontend service: Vite build]
