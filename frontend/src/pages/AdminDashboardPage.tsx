@@ -360,7 +360,7 @@ export default function AdminDashboardPage() {
                     type="button"
                     disabled={!!exporting}
                     onClick={() => handleExport('users', 'campuseats_users.csv')}
-                    className="nav-button"
+                    className="btn-primary"
                   >
                     {exporting === 'users' ? 'Exporting...' : 'Export Users (CSV)'}
                   </button>
@@ -368,7 +368,7 @@ export default function AdminDashboardPage() {
                     type="button"
                     disabled={!!exporting}
                     onClick={() => handleExport('orders', 'campuseats_orders.csv')}
-                    className="nav-button"
+                    className="btn-primary"
                   >
                     {exporting === 'orders' ? 'Exporting...' : 'Export Orders (CSV)'}
                   </button>
@@ -376,7 +376,7 @@ export default function AdminDashboardPage() {
                     type="button"
                     disabled={!!exporting}
                     onClick={() => handleExport('audit-logs', 'campuseats_audit_logs.csv')}
-                    className="nav-button"
+                    className="btn-primary"
                   >
                     {exporting === 'audit-logs' ? 'Exporting...' : 'Export Audit Logs (CSV)'}
                   </button>
