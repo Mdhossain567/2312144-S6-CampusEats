@@ -7,6 +7,7 @@ import {
   bulkUnbanUsers,
   changeUserRole,
   deleteAdminContentItem,
+  downloadAdminExport,
   getAdminStats,
   getAdminUserDetail,
   getSecurityReport,
@@ -67,6 +68,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
+  const [exporting, setExporting] = useState<string | null>(null)
 
   useEffect(() => {
     if (activeTab === 'overview') loadStats()
@@ -86,6 +88,18 @@ export default function AdminDashboardPage() {
       setError(err instanceof Error ? err.message : 'Could not load stats')
     } finally {
       setStatsLoading(false)
+    }
+  }
+
+  async function handleExport(type: 'users' | 'orders' | 'audit-logs', filename: string) {
+    setExporting(type)
+    setError('')
+    try {
+      await downloadAdminExport(type, filename)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not export CSV')
+    } finally {
+      setExporting(null)
     }
   }
 
@@ -341,16 +355,31 @@ export default function AdminDashboardPage() {
 
               <div className="card" style={{ padding: 16 }}>
                 <h3 style={{ margin: '0 0 12px 0' }}>Data Exports</h3>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <a href="/api/v1/admin/export/users" download className="nav-button" style={{ display: 'inline-block', textDecoration: 'none' }}>
-                    Export Users (CSV)
-                  </a>
-                  <a href="/api/v1/admin/export/orders" download className="nav-button" style={{ display: 'inline-block', textDecoration: 'none' }}>
-                    Export Orders (CSV)
-                  </a>
-                  <a href="/api/v1/admin/export/audit-logs" download className="nav-button" style={{ display: 'inline-block', textDecoration: 'none' }}>
-                    Export Audit Logs (CSV)
-                  </a>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    disabled={!!exporting}
+                    onClick={() => handleExport('users', 'campuseats_users.csv')}
+                    className="nav-button"
+                  >
+                    {exporting === 'users' ? 'Exporting...' : 'Export Users (CSV)'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!!exporting}
+                    onClick={() => handleExport('orders', 'campuseats_orders.csv')}
+                    className="nav-button"
+                  >
+                    {exporting === 'orders' ? 'Exporting...' : 'Export Orders (CSV)'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!!exporting}
+                    onClick={() => handleExport('audit-logs', 'campuseats_audit_logs.csv')}
+                    className="nav-button"
+                  >
+                    {exporting === 'audit-logs' ? 'Exporting...' : 'Export Audit Logs (CSV)'}
+                  </button>
                 </div>
               </div>
             </div>

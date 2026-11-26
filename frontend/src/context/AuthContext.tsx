@@ -83,10 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   async function login(data: LoginInput) {
-    const result = await apiLogin(data)
-    setToken(result.access_token)
     setSessionExpired(false)
     setBannedMessage(null)
+    const result = await apiLogin(data)
+    setToken(result.access_token)
     setUser(result.user)
   }
 

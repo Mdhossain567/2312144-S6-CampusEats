@@ -30,7 +30,7 @@ export default function RegisterPage() {
       return
     }
     if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
-      setError('Password needs at least 8 characters, with a letter and a digit')
+      setError('Weak password: needs at least 8 characters, with a letter and a digit')
       return
     }
     if (password !== confirm) {
@@ -79,6 +79,12 @@ export default function RegisterPage() {
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
           />
+          {password.length > 0 &&
+            (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) && (
+              <span className="error" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
+                Weak password (use at least 8 characters with a letter and a digit)
+              </span>
+            )}
         </label>
 
         <label>

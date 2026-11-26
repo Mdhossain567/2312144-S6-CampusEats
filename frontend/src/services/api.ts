@@ -99,6 +99,14 @@ async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
 
   // --- 401: attempt one silent refresh then retry ---
   if (response.status === 401) {
+    if (
+      url.includes('/auth/login') ||
+      url.includes('/auth/register') ||
+      url.includes('/auth/refresh')
+    ) {
+      return _handleError(response)
+    }
+
     if (!refreshPromise) {
       refreshPromise = _doRefresh().finally(() => {
         refreshPromise = null
@@ -456,5 +464,53 @@ export function listAuditLogs(
 
 export function getSecurityReport() {
   return request<SecurityReport>(`${ADMIN}/security`)
+}
+
+export async function downloadAdminExport(
+  type: 'users' | 'orders' | 'audit-logs',
+  filename: string,
+): Promise<void> {
+  const url = `${ADMIN}/export/${type}`
+  const headers = new Headers()
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`)
+  }
+
+  let res = await fetch(url, { headers, credentials: 'include' })
+
+  if (res.status === 401) {
+    if (!refreshPromise) {
+      refreshPromise = _doRefresh().finally(() => {
+        refreshPromise = null
+      })
+    }
+    const newToken = await refreshPromise
+    if (newToken) {
+      const retryHeaders = new Headers()
+      retryHeaders.set('Authorization', `Bearer ${newToken}`)
+      res = await fetch(url, { headers: retryHeaders, credentials: 'include' })
+    }
+  }
+
+  if (!res.ok) {
+    let errorDetail = 'Download failed'
+    try {
+      const errorBody = await res.json()
+      if (errorBody && errorBody.detail) errorDetail = errorBody.detail
+    } catch {
+      /* ignore */
+    }
+    throw new Error(errorDetail)
+  }
+
+  const blob = await res.blob()
+  const downloadUrl = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = downloadUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  window.URL.revokeObjectURL(downloadUrl)
 }
 
