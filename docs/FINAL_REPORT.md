@@ -827,12 +827,12 @@ def require_permission(permission: str | Permission):
 
 ```mermaid
 flowchart LR
-    O[Overview] --> E1[/api/v1/admin/stats]
-    U[Users and user detail] --> E2[/api/v1/admin/users]
-    M[Moderation: orders and groups] --> E3[/api/v1/admin/content]
-    L[Activity log] --> E4[/api/v1/admin/audit-logs]
-    S[Security view] --> E5[/api/v1/admin/security]
-    X[CSV exports] --> E6[/api/v1/admin/export/*]
+    O["Overview"] --> E1["/api/v1/admin/stats"]
+    U["Users and user detail"] --> E2["/api/v1/admin/users"]
+    M["Moderation: orders and groups"] --> E3["/api/v1/admin/content"]
+    L["Activity log"] --> E4["/api/v1/admin/audit-logs"]
+    S["Security view"] --> E5["/api/v1/admin/security"]
+    X["CSV exports"] --> E6["/api/v1/admin/export/*"]
 ```
 
 **Table 22\. Admin pages**
